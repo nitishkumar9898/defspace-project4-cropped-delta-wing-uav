@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project 4 — Cropped Delta Wing UAV Analysis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{--navy:#1F4E79;--blue:#2E75B6;--lightblue:#BDD7EE;--accent:#C00000;--bg:#F0F6FF;--card:#fff;--text:#1a1a2e;--muted:#555;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);}
+  header{background:linear-gradient(135deg,var(--navy),var(--blue));color:white;padding:28px 40px;box-shadow:0 4px 20px rgba(31,78,121,0.3);}
+  header .tag{font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.8;margin-bottom:6px;}
+  header h1{font-size:26px;font-weight:700;margin-bottom:4px;}
+  header p{font-size:13px;opacity:.85;}
+  header .meta{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap;}
+  header .meta span{background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px;font-size:12px;}
+  nav{background:var(--navy);display:flex;overflow-x:auto;border-bottom:3px solid var(--accent);}
+  nav button{background:none;border:none;color:rgba(255,255,255,.7);padding:12px 20px;cursor:pointer;font-size:13px;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-3px;transition:all .2s;}
+  nav button.active,nav button:hover{color:white;border-bottom-color:#FFD966;background:rgba(255,255,255,.08);}
+  .container{max-width:1200px;margin:0 auto;padding:28px 20px;}
+  .section{display:none;}.section.active{display:block;}
+  .card{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:22px;border-top:4px solid var(--blue);}
+  .card h2{font-size:17px;color:var(--navy);margin-bottom:16px;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  @media(max-width:800px){.grid-2,.grid-4{grid-template-columns:1fr 1fr;}}
+  @media(max-width:500px){.grid-4{grid-template-columns:1fr 1fr;}}
+  .stat-card{background:linear-gradient(135deg,var(--navy),var(--blue));color:white;border-radius:10px;padding:16px;text-align:center;}
+  .stat-card .val{font-size:24px;font-weight:700;}
+  .stat-card .unit{font-size:11px;opacity:.8;margin-top:2px;}
+  .stat-card .lbl{font-size:10px;opacity:.7;margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{background:var(--navy);color:white;padding:9px 12px;text-align:left;}
+  td{padding:8px 12px;border-bottom:1px solid #e8f0f8;}
+  tr:nth-child(even) td{background:#f5f9ff;}
+  .formula-box{background:#1a1a2e;color:#00d4ff;font-family:'Courier New',monospace;padding:14px 18px;border-radius:8px;font-size:12px;line-height:2;border-left:4px solid var(--accent);}
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:700px){.charts-grid{grid-template-columns:1fr;}}
+  .chart-card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);border-top:3px solid var(--blue);}
+  .chart-card h3{font-size:13px;color:var(--navy);margin-bottom:12px;font-weight:600;}
+  .chart-wrap{position:relative;height:240px;}
+  footer{background:var(--navy);color:rgba(255,255,255,.7);text-align:center;padding:16px;font-size:12px;margin-top:40px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="tag">Def Space Summer Internship 2026 &nbsp;|&nbsp; Aircraft Design Project 4</div>
+  <h1>Cropped Delta Wing UAV — Aerodynamic Analysis Dashboard</h1>
+  <p>Trim analysis, drag polar, performance curves, and elevator deflection — all computed from first principles</p>
+  <div class="meta">
+    <span>👤 Nitish Kumar Kannaujiya</span>
+    <span>🎓 24BECCS33 | B.Tech CSE Cybersecurity</span>
+    <span>🏛️ Central University of Jammu</span>
+    <span>📅 2026</span>
+  </div>
+</header>
+<nav>
+  <button class="active" onclick="showTab('inputs',this)">⚙️ Parameters</button>
+  <button onclick="showTab('trim',this)">✂️ Trim Analysis</button>
+  <button onclick="showTab('perf',this)">🚀 Performance</button>
+  <button onclick="showTab('charts',this)">📊 All Charts</button>
+  <button onclick="showTab('results',this)">📋 Results Table</button>
+</nav>
+<div class="container">
+
+<!-- INPUTS -->
+<div id="inputs" class="section active">
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card"><div class="val">3.5 kg</div><div class="unit">UAV Mass</div><div class="lbl">MTOW</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#C00000,#c0392b)"><div class="val">0.675m²</div><div class="unit">Wing Area</div><div class="lbl">Planform</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#375623,#27ae60)"><div class="val">2.92/rad</div><div class="unit">CLα</div><div class="lbl">Lift Slope</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#6f42c1,#8e44ad)"><div class="val">−0.292</div><div class="unit">Cmα</div><div class="lbl">Pitch Slope</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h2>⚙️ Aerodynamic Parameters</h2>
+      <table>
+        <tr><th>Parameter</th><th>Symbol</th><th>Value</th></tr>
+        <tr><td>Root Chord</td><td>Cᵣ</td><td>0.90 m</td></tr>
+        <tr><td>Tip Chord</td><td>Cₜ</td><td>0.15 m</td></tr>
+        <tr><td>Wingspan</td><td>b</td><td>1.50 m</td></tr>
+        <tr><td>Wing Area</td><td>S</td><td>0.675 m²</td></tr>
+        <tr><td>Taper Ratio</td><td>λ</td><td>0.167</td></tr>
+        <tr><td>Aspect Ratio</td><td>AR</td><td>3.33</td></tr>
+        <tr><td>Oswald Efficiency</td><td>e</td><td>0.89</td></tr>
+        <tr><td>Induced Drag Factor</td><td>k</td><td>0.1076</td></tr>
+        <tr><td>Zero-lift drag coeff.</td><td>CD₀</td><td>0.030</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h2>📐 Stability & Control Derivatives</h2>
+      <table>
+        <tr><th>Parameter</th><th>Symbol</th><th>Value</th></tr>
+        <tr><td>Zero-lift pitch moment</td><td>Cm₀</td><td>0.010</td></tr>
+        <tr><td>Lift-curve slope</td><td>CLα</td><td>2.92 /rad</td></tr>
+        <tr><td>Elevator lift slope</td><td>CLδe</td><td>0.265 /rad</td></tr>
+        <tr><td>Pitch moment slope</td><td>Cmα</td><td>−0.292 /rad</td></tr>
+        <tr><td>Elevator pitch slope</td><td>Cmδe</td><td>−0.40 /rad</td></tr>
+        <tr><td>Air density (sea level)</td><td>ρ</td><td>1.225 kg/m³</td></tr>
+        <tr><td>UAV Mass</td><td>m</td><td>3.5 kg</td></tr>
+        <tr><td>Weight</td><td>W</td><td>34.34 N</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <h2>🧮 Key Formulae</h2>
+    <div class="formula-box">
+Trim condition:  Cm = Cm₀ + Cmα·α + Cmδe·δe = 0<br>
+→  δe = −(Cm₀ + Cmα·α) / Cmδe<br><br>
+Lift coeff:  CL = CLα·α + CLδe·δe<br>
+Level flight speed:  V = √(2W / ρ·S·CL)<br>
+Drag coeff:  CD = CD₀ + k·CL²<br>
+Thrust required:  Tr = ½·ρ·V²·S·CD<br>
+Power required:  Pr = Tr · V<br>
+k = 1 / (π·AR·e) = 1/(π·3.33·0.89) = 0.1076
+    </div>
+  </div>
+</div>
+
+<!-- TRIM -->
+<div id="trim" class="section">
+  <div class="card">
+    <h2>✂️ Trim Analysis: δe and CL vs Angle of Attack</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">At each α, elevator deflection required to maintain trim (Cm=0), and the resulting CL</p>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>Elevator Deflection δe vs α (°)</h3><div class="chart-wrap"><canvas id="deChart"></canvas></div></div>
+      <div class="chart-card"><h3>Lift Coefficient CL vs α (°)</h3><div class="chart-wrap"><canvas id="clChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📋 Trim Data Table (α from −5° to +15°)</h2>
+    <div style="overflow-x:auto">
+    <table id="trimTable">
+      <tr><th>α (°)</th><th>α (rad)</th><th>δe (rad)</th><th>δe (°)</th><th>CL</th><th>CD</th><th>V (m/s)</th></tr>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- PERF -->
+<div id="perf" class="section">
+  <div class="card">
+    <h2>🚀 Performance Analysis</h2>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>Drag Polar: CD vs CL</h3><div class="chart-wrap"><canvas id="polarChart"></canvas></div></div>
+      <div class="chart-card"><h3>Thrust Required Tr vs Velocity V</h3><div class="chart-wrap"><canvas id="trChart"></canvas></div></div>
+      <div class="chart-card"><h3>Power Required Pr vs Velocity V</h3><div class="chart-wrap"><canvas id="prChart"></canvas></div></div>
+      <div class="chart-card"><h3>L/D Ratio vs α (°)</h3><div class="chart-wrap"><canvas id="ldChart"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS -->
+<div id="charts" class="section">
+  <div class="card">
+    <h2>📊 All Analysis Charts</h2>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>CL vs α</h3><div class="chart-wrap"><canvas id="clAll"></canvas></div></div>
+      <div class="chart-card"><h3>δe vs α</h3><div class="chart-wrap"><canvas id="deAll"></canvas></div></div>
+      <div class="chart-card"><h3>V vs α</h3><div class="chart-wrap"><canvas id="vAll"></canvas></div></div>
+      <div class="chart-card"><h3>Drag Polar</h3><div class="chart-wrap"><canvas id="polAll"></canvas></div></div>
+      <div class="chart-card"><h3>Tr vs V</h3><div class="chart-wrap"><canvas id="trAll"></canvas></div></div>
+      <div class="chart-card"><h3>Pr vs V</h3><div class="chart-wrap"><canvas id="prAll"></canvas></div></div>
+      <div class="chart-card"><h3>CL/CD vs α</h3><div class="chart-wrap"><canvas id="ldAll"></canvas></div></div>
+      <div class="chart-card"><h3>CL^1.5/CD vs α</h3><div class="chart-wrap"><canvas id="cl15All"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS TABLE -->
+<div id="results" class="section">
+  <div class="card">
+    <h2>📋 Complete Results Summary</h2>
+    <div style="overflow-x:auto">
+    <table id="fullTable">
+      <tr><th>α(°)</th><th>δe(°)</th><th>CL</th><th>CD</th><th>V(m/s)</th><th>Tr(N)</th><th>Pr(W)</th><th>L/D</th><th>CL^1.5/CD</th></tr>
+    </table>
+    </div>
+  </div>
+  <div class="card">
+    <h2>✅ Key Performance Findings</h2>
+    <table id="keyTable">
+      <tr><th>Metric</th><th>Value</th><th>At α</th></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+<footer>Def Space Summer Internship 2026 &nbsp;|&nbsp; Nitish Kumar Kannaujiya — 24BECCS33 &nbsp;|&nbsp; B.Tech CSE Cybersecurity &nbsp;|&nbsp; Central University of Jammu</footer>
+
+<script>
+// Parameters
+const Cm0=0.01,Cma=-0.292,Cmde=-0.40;
+const CLa=2.92,CLde=0.265;
+const CD0=0.030,k=0.1076;
+const rho=1.225,W=34.335,S=0.675;
+const alphas=[];
+for(let a=-5;a<=15;a+=1)alphas.push(a);
+function rad(d){return d*Math.PI/180;}
+
+// Compute all data
+const data=alphas.map(a=>{
+  const ar=rad(a);
+  const de=-(Cm0+Cma*ar)/Cmde;
+  const CL=CLa*ar+CLde*de;
+  const CD=CD0+k*CL*CL;
+  const V=CL>0.01?Math.sqrt(2*W/(rho*S*CL)):null;
+  const Tr=V?0.5*rho*V*V*S*CD:null;
+  const Pr=V?Tr*V:null;
+  const LD=CD>0?CL/CD:null;
+  const cl15=CD>0?Math.pow(Math.max(0,CL),1.5)/CD:null;
+  return{a,ar,de:de*180/Math.PI,CL,CD,V,Tr,Pr,LD,cl15};
+});
+
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='trim'){fillTrimTable();drawTrimCharts();}
+  if(id==='perf'){drawPerfCharts();}
+  if(id==='charts'){drawAllCharts();}
+  if(id==='results'){fillFullTable();}
+}
+
+function mkChart(ctx,type,labels,datasets,xl,yl){
+  return new Chart(ctx,{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:datasets.length>1}},scales:{x:{title:{display:!!xl,text:xl}},y:{title:{display:!!yl,text:yl}}}}});
+}
+
+const charts={};
+function drawTrimCharts(){
+  const lbls=data.map(d=>d.a);
+  if(!charts.de){charts.de=mkChart(document.getElementById('deChart').getContext('2d'),'line',lbls,[{label:'δe (°)',data:data.map(d=>d.de.toFixed(3)),borderColor:'#C00000',tension:0.3,pointRadius:3}],'α (°)','δe (°)');}
+  if(!charts.cl){charts.cl=mkChart(document.getElementById('clChart').getContext('2d'),'line',lbls,[{label:'CL',data:data.map(d=>d.CL.toFixed(4)),borderColor:'#1F4E79',tension:0.3,pointRadius:3}],'α (°)','CL');}
+}
+function drawPerfCharts(){
+  const vd=data.filter(d=>d.V);
+  const lbls=vd.map(d=>d.a);
+  if(!charts.polar){charts.polar=mkChart(document.getElementById('polarChart').getContext('2d'),'scatter',null,[{label:'Drag Polar',data:vd.map(d=>({x:+d.CL.toFixed(4),y:+d.CD.toFixed(5)})),borderColor:'#2E75B6',showLine:true,tension:0.3,pointRadius:3}],'CL','CD');}
+  if(!charts.tr){charts.tr=mkChart(document.getElementById('trChart').getContext('2d'),'line',vd.map(d=>d.V.toFixed(1)),[{label:'Tr (N)',data:vd.map(d=>d.Tr.toFixed(3)),borderColor:'#C00000',tension:0.3,pointRadius:3}],'V (m/s)','Tr (N)');}
+  if(!charts.pr){charts.pr=mkChart(document.getElementById('prChart').getContext('2d'),'line',vd.map(d=>d.V.toFixed(1)),[{label:'Pr (W)',data:vd.map(d=>d.Pr.toFixed(2)),borderColor:'#375623',tension:0.3,pointRadius:3}],'V (m/s)','Pr (W)');}
+  if(!charts.ld){charts.ld=mkChart(document.getElementById('ldChart').getContext('2d'),'line',lbls,[{label:'L/D',data:vd.map(d=>d.LD?.toFixed(3)),borderColor:'#6f42c1',tension:0.3,pointRadius:3}],'α (°)','L/D');}
+}
+function drawAllCharts(){
+  const lbls=data.map(d=>d.a);
+  const vd=data.filter(d=>d.V);
+  const vlbls=vd.map(d=>d.V.toFixed(1));
+  const ids=[['clAll','CL vs α','line',lbls,d=>d.CL.toFixed(4),'#1F4E79','α (°)','CL'],
+             ['deAll','δe vs α','line',lbls,d=>d.de.toFixed(3),'#C00000','α (°)','δe (°)'],
+             ['vAll','V vs α','line',lbls,d=>d.V?.toFixed(2),'#2E75B6','α (°)','V (m/s)'],
+             ['trAll','Tr vs V','line',vlbls,d=>d.Tr?.toFixed(3),'#C00000','V (m/s)','Tr (N)'],
+             ['prAll','Pr vs V','line',vlbls,d=>d.Pr?.toFixed(2),'#375623','V (m/s)','Pr (W)'],
+             ['ldAll','L/D vs α','line',lbls,d=>d.LD?.toFixed(3),'#6f42c1','α (°)','L/D'],
+             ['cl15All','CL^1.5/CD vs α','line',lbls,d=>d.cl15?.toFixed(4),'#856404','α (°)','CL^1.5/CD']];
+  ids.forEach(([cid,lbl,type,labels,fn,color,xl,yl])=>{
+    if(!charts[cid]){
+      const ds=cid==='polAll'?[{label:lbl,data:vd.map(d=>({x:+d.CL.toFixed(4),y:+d.CD.toFixed(5)})),borderColor:color,showLine:true,tension:0.3,pointRadius:3}]:[{label:lbl,data:(cid==='trAll'||cid==='prAll'?vd:data).map(fn),borderColor:color,tension:0.3,pointRadius:3}];
+      charts[cid]=mkChart(document.getElementById(cid).getContext('2d'),type,labels,ds,xl,yl);
+    }
+  });
+  if(!charts.polAll){charts.polAll=mkChart(document.getElementById('polAll').getContext('2d'),'scatter',null,[{label:'Drag Polar',data:vd.map(d=>({x:+d.CL.toFixed(4),y:+d.CD.toFixed(5)})),borderColor:'#2E75B6',showLine:true,tension:0.3,pointRadius:3}],'CL','CD');}
+}
+function fillTrimTable(){
+  const tb=document.getElementById('trimTable');
+  if(tb.rows.length>1)return;
+  data.forEach(d=>{
+    const r=tb.insertRow();
+    [d.a,d.ar.toFixed(4),d.de.toFixed(4),(d.de).toFixed(2),d.CL.toFixed(4),d.CD.toFixed(5),d.V?d.V.toFixed(2):'—'].forEach(v=>{const c=r.insertCell();c.textContent=v;});
+  });
+}
+function fillFullTable(){
+  const tb=document.getElementById('fullTable');
+  if(tb.rows.length>1)return;
+  data.forEach(d=>{
+    if(!d.V)return;
+    const r=tb.insertRow();
+    [d.a.toFixed(0),d.de.toFixed(2),d.CL.toFixed(4),d.CD.toFixed(5),d.V.toFixed(2),d.Tr.toFixed(3),d.Pr.toFixed(2),d.LD.toFixed(3),d.cl15.toFixed(4)].forEach(v=>{const c=r.insertCell();c.textContent=v;});
+  });
+  // Key findings
+  const vd=data.filter(d=>d.V&&d.LD);
+  const maxLD=vd.reduce((a,b)=>b.LD>a.LD?b:a);
+  const minTr=vd.reduce((a,b)=>b.Tr<a.Tr?b:a);
+  const minPr=vd.reduce((a,b)=>b.Pr<a.Pr?b:a);
+  const maxCl15=vd.reduce((a,b)=>b.cl15>a.cl15?b:a);
+  const tb2=document.getElementById('keyTable');
+  [['Max L/D (min thrust)',maxLD.LD.toFixed(2),maxLD.a+'°'],
+   ['Min Thrust Required',minTr.Tr.toFixed(2)+' N',minTr.a+'°'],
+   ['Min Power Required',minPr.Pr.toFixed(1)+' W',minPr.a+'°'],
+   ['Max CL^1.5/CD (min power prop.)',maxCl15.cl15.toFixed(3),maxCl15.a+'°']
+  ].forEach(([m,v,a])=>{const r=tb2.insertRow();[m,v,a].forEach(x=>{const c=r.insertCell();c.textContent=x;});});
+}
+</script>
+</body>
+</html>
